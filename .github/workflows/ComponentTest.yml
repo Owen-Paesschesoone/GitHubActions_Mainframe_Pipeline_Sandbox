@@ -18,8 +18,8 @@ jobs:
             echo "$key=$value" >> $GITHUB_ENV
           done < Testdata.txt
 
-      - name: sleep for 30 seconds
-        run: sleep 30s
+      - name: sleep for 5 seconds
+        run: sleep 5s
 
       - name: Parse report.txt and generate JSON
         run: |
