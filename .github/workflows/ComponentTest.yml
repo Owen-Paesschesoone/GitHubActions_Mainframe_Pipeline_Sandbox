@@ -1,0 +1,46 @@
+name: Component Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Read testdata.txt and export variables
+        run: |
+          while IFS='=' read -r key value; do
+            key=$(echo "$key" | tr -d ' ')
+            value=$(echo "$value" | sed -e 's/^ *//g')
+            echo "$key=$value" >> $GITHUB_ENV
+          done < testdata.txt
+
+      - name: Use variables
+        run: |
+          req4data="'${SUBSYSTEM}TN000.DSNP.JCL(${JCL_DETAILS})\\'"
+          req6data='{"file":"//\'"${req4data}"'"}'
+          joburl="https://zosmf${PLATFORM}t.be.srv.dev.sys:32208/zosmf/restjobs/jobs"
+
+
+          echo curl -X PUT "$joburl" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -H "X-CSRF-ZOSMF-HEADER: \"\"" \
+            -u "$MAINFRAME_PASS" \
+            -d "$req6data" \
+            -o "${SOF}Job.txt"
+      - name: sleep for 30 seconds
+        run: sleep 30s
+  read:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        run: |
+          while IFS='=' read -r key value; do
+            key=$(echo "$key" | tr -d ' ')
+            value=$(echo "$value" | sed -e 's/^ *//g')
+            echo "$key=$value" >> $GITHUB_ENV
+          done < testdata.txt
