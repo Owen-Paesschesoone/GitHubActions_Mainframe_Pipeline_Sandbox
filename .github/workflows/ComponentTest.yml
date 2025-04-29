@@ -30,8 +30,7 @@ jobs:
               gsub(/^[ \t]+/, "", testcase)
             }
             /^"/ {
-              comment=$0;
-              gsub(/^"|"$/, "", comment)
+              comment = substr($0, 2, length($0) - 2)  
             }
             /TEST-CASE-RESULT/ {
               split($0, b, ":");
