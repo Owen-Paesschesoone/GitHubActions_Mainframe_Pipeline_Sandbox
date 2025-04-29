@@ -22,12 +22,52 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Read Testdata.txt and submit mainframe job
+        id: submit
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          data=$(cat Testdata.txt)
+
+          JCL_DETAILS=$(echo "$data" | grep "JCL_DETAILS" | cut -d'=' -f2)
+          MAINFRAME_PASS=$(echo "$data" | grep "MAINFRAME_PASS" | cut -d'=' -f2)
+          SOF=$(echo "$data" | grep "SOF" | cut -d'=' -f2)
+          SUBSYSTEM=$(echo "$data" | grep "SUBSYSTEM" | cut -d'=' -f2)
+          PLATFORM=$(echo "$data" | grep "PLATFORM" | cut -d'=' -f2)
+
+          req4data="'${SUBSYSTEM}TN000.DSNP.JCL(${JCL_DETAILS})\\'"
+          req6data='{"file":"//\'"${req4data}"'"}'
+
+          joburl="https://zosmf${PLATFORM}t.be.srv.dev.sys:32208/zosmf/restjobs/jobs"
+
+          echo -X PUT "$joburl" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -H "X-CSRF-ZOSMF-HEADER: \"\"" \
+            -u "$MAINFRAME_PASS" \
+            -d "$req6data" \
+            -o "${SOF}Job.txt"
+
+      - name: Wait for job to complete
+        run: |
+          echo "Waiting 1 minute to complete job..."
+          sleep 60
+
+      - name: Parse job output and retrieve result
+        run: |
+          data=$(cat Testdata.txt)
+
+          JCL_DETAILS=$(echo "$data" | grep "JCL_DETAILS" | cut -d'=' -f2)
+          MAINFRAME_PASS=$(echo "$data" | grep "MAINFRAME_PASS" | cut -d'=' -f2)
+          SOF=$(echo "$data" | grep "SOF" | cut -d'=' -f2)
+          PLATFORM=$(echo "$data" | grep "PLATFORM" | cut -d'=' -f2)
+
+          jobid=$(grep -oP '"jobid":"\K[^"]+' "${SOF}Job.txt")
+          jobname=$(grep -oP '"jobname":"\K[^"]+' "${SOF}Job.txt")
+
+          jobout_url="https://zosmf${PLATFORM}t.be.srv.dev.sys:32208/zosmf/restjobs/jobs/${jobname}/${jobid}"
+
+          echo -X GET "$jobout_url" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -H "X-CSRF-ZOSMF-HEADER: \"\"" \
+            -u "$MAINFRAME_PASS" \
+            -o "${SOF}Jobout.txt"
