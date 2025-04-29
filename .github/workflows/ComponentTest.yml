@@ -18,7 +18,8 @@ jobs:
             echo "$key=$value" >> $GITHUB_ENV
           done < Testdata.txt
 
-      - name: Use variables
+      - name: Submitting Job
+        id: jobSubmit
         run: |
           req4data="'${SUBSYSTEM}TN000.DSNP.JCL(${JCL_DETAILS})\\'"
           req6data='{"file":"//\'"${req4data}"'"}'
@@ -32,15 +33,30 @@ jobs:
             -u "$MAINFRAME_PASS" \
             -d "$req6data" \
             -o "${SOF}Job.txt"
+            
+      - name: Verifying the JCL Return Code
+          
+
+
+      
       - name: sleep for 30 seconds
         run: sleep 30s
-  read:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        run: |
-          while IFS='=' read -r key value; do
-            key=$(echo "$key" | tr -d ' ')
-            value=$(echo "$value" | sed -e 's/^ *//g')
-            echo "$key=$value" >> $GITHUB_ENV
-          done < testdata.txt
+
+      - name: 
+        
+        
+        
+        
+        
+        
+        if (retcode.contains("CC 0000") || retcode.contains("CC 0004") || retcode.contains("CC 0999") || retcode.contains("null") || retcode.contains("CC 0008")) {
+          status = "PASS"
+          println "JCL submitted successfully"
+          record1 = "JCL submitted successfully"
+      } else {
+          status = "FAIL"
+          println status
+          println "Error code in JCL submission"
+          record1 = "Error code in JCL submission"
+      }
+
