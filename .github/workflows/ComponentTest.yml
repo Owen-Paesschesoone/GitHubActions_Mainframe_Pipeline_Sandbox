@@ -18,45 +18,40 @@ jobs:
             echo "$key=$value" >> $GITHUB_ENV
           done < Testdata.txt
 
-      - name: Submitting Job
-        id: jobSubmit
-        run: |
-          req4data="'${SUBSYSTEM}TN000.DSNP.JCL(${JCL_DETAILS})\\'"
-          req6data='{"file":"//\'"${req4data}"'"}'
-          joburl="https://zosmf${PLATFORM}t.be.srv.dev.sys:32208/zosmf/restjobs/jobs"
-
-
-          echo curl -X PUT "$joburl" \
-            -H "Accept: application/json" \
-            -H "Content-Type: application/json" \
-            -H "X-CSRF-ZOSMF-HEADER: \"\"" \
-            -u "$MAINFRAME_PASS" \
-            -d "$req6data" \
-            -o "${SOF}Job.txt"
-            
-      - name: Verifying the JCL Return Code
-          
-
-
-      
       - name: sleep for 30 seconds
         run: sleep 30s
 
-      - name: 
-        
-        
-        
-        
-        
-        
-        if (retcode.contains("CC 0000") || retcode.contains("CC 0004") || retcode.contains("CC 0999") || retcode.contains("null") || retcode.contains("CC 0008")) {
-          status = "PASS"
-          println "JCL submitted successfully"
-          record1 = "JCL submitted successfully"
-      } else {
-          status = "FAIL"
-          println status
-          println "Error code in JCL submission"
-          record1 = "Error code in JCL submission"
-      }
-
+      - name: Parse report.txt and generate JSON
+        run: |
+          awk '
+            /TEST-CASE-ID:/ {
+              split($0, a, ":");
+              testcase=a[2];
+              gsub(/^[ \t]+/, "", testcase)
+            }
+            /^"/ {
+              comment=$0;
+              gsub(/^"|"$/, "", comment)
+            }
+            /TEST-CASE-RESULT/ {
+              split($0, b, ":");
+              result=b[2];
+              gsub(/^[ \t]+/, "", result)
+            }
+            END {
+              print "{" > "result.json"
+              print "  \"testCaseKey\": \"" testcase "\"," >> "result.json"
+              print "  \"status\": \"" result "\"," >> "result.json"
+              print "  \"environment\": \"FET\"," >> "result.json"
+              print "  \"executionTime\": 180000," >> "result.json"
+              print "  \"comment\": \"" comment "\"," >> "result.json"
+              print "  \"scriptResults\": [" >> "result.json"
+              print "    {" >> "result.json"
+              print "      \"index\": 0," >> "result.json"
+              print "      \"status\": \"" result "\"," >> "result.json"
+              print "      \"comment\": \"" comment "\"" >> "result.json"
+              print "    }" >> "result.json"
+              print "  ]" >> "result.json"
+              print "}" >> "result.json"
+            }
+          ' validation_report.txt
