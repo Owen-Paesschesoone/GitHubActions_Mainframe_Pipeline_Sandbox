@@ -10,13 +10,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Read testdata.txt and export variables
+      - name: Read Testdata.txt and export variables
         run: |
           while IFS='=' read -r key value; do
             key=$(echo "$key" | tr -d ' ')
             value=$(echo "$value" | sed -e 's/^ *//g')
             echo "$key=$value" >> $GITHUB_ENV
-          done < testdata.txt
+          done < Testdata.txt
 
       - name: Use variables
         run: |
