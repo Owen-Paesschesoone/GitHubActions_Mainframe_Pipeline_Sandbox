@@ -6,7 +6,7 @@ name: CI
 on:
   # Runs at 10:30, Monday through Friday UTC.
   schedule:
-  - cron: '30 10 * * 1-5'
+    - cron: "30 10 * * 1-5"
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -29,6 +29,9 @@ jobs:
 
           JCL_DETAILS=$(echo "$data" | grep "JCL_DETAILS" | cut -d'=' -f2)
           MAINFRAME_PASS=$(echo "$data" | grep "MAINFRAME_PASS" | cut -d'=' -f2)
+          IFS=$'\n' read -r user_id password <<< "${{ secrets.MAINFRAME_PASS }}"
+          echo "User ID: $user_id"
+          echo "Password: $password"
           SOF=$(echo "$data" | grep "SOF" | cut -d'=' -f2)
           SUBSYSTEM=$(echo "$data" | grep "SUBSYSTEM" | cut -d'=' -f2)
           PLATFORM=$(echo "$data" | grep "PLATFORM" | cut -d'=' -f2)
@@ -38,6 +41,7 @@ jobs:
 
           joburl="https://zosmf${PLATFORM}t.be.srv.dev.sys:32208/zosmf/restjobs/jobs"
 
+
           echo -X PUT "$joburl" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
@@ -45,29 +49,3 @@ jobs:
             -u "$MAINFRAME_PASS" \
             -d "$req6data" \
             -o "${SOF}Job.txt"
-
-      - name: Wait for job to complete
-        run: |
-          echo "Waiting 1 minute to complete job..."
-          sleep 60
-
-      - name: Parse job output and retrieve result
-        run: |
-          data=$(cat Testdata.txt)
-
-          JCL_DETAILS=$(echo "$data" | grep "JCL_DETAILS" | cut -d'=' -f2)
-          MAINFRAME_PASS=$(echo "$data" | grep "MAINFRAME_PASS" | cut -d'=' -f2)
-          SOF=$(echo "$data" | grep "SOF" | cut -d'=' -f2)
-          PLATFORM=$(echo "$data" | grep "PLATFORM" | cut -d'=' -f2)
-
-          jobid=$(grep -oP '"jobid":"\K[^"]+' "${SOF}Job.txt")
-          jobname=$(grep -oP '"jobname":"\K[^"]+' "${SOF}Job.txt")
-
-          jobout_url="https://zosmf${PLATFORM}t.be.srv.dev.sys:32208/zosmf/restjobs/jobs/${jobname}/${jobid}"
-
-          echo -X GET "$jobout_url" \
-            -H "Accept: application/json" \
-            -H "Content-Type: application/json" \
-            -H "X-CSRF-ZOSMF-HEADER: \"\"" \
-            -u "$MAINFRAME_PASS" \
-            -o "${SOF}Jobout.txt"
