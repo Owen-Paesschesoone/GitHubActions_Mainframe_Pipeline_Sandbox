@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: groovy:latest  # Official Groovy image from Docker Hub
+      options: --user root
 
     steps:
       - name: Checkout repository
