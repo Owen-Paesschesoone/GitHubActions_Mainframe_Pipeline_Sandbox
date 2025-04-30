@@ -1,3 +1,8 @@
+name: Main_Component
+
+on:
+  workflow_dispatch:
+
 jobs:
   run-groovy:
     runs-on: ubuntu-latest
